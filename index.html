@@ -19,76 +19,139 @@
   #msg{margin-top:14px;font-size:.95rem;min-height:1.2em}
   .ok{color:var(--ok)}.err{color:var(--err)}
   body{background:#fff url("fond.jpg") left top/min(320px,60vw) auto no-repeat}
+  .lang{display:flex;gap:6px;justify-content:flex-end;margin-bottom:10px}
+  .lang button{width:auto;margin:0;padding:6px 12px;font-size:.85rem;color:var(--accent);background:#fff;border:1px solid var(--accent)}
+  .lang button.on{color:#fff;background:var(--accent)}
 </style>
 </head>
 <body>
 <form id="f" novalidate>
-  <h1>Vos coordonnées</h1>
-  <p class="sub">Remplissez les champs ci-dessous.</p>
+  <div class="lang" role="group" aria-label="Langue / Language / Lugha">
+    <button type="button" data-l="fr">FR</button>
+    <button type="button" data-l="en">EN</button>
+    <button type="button" data-l="sw">SW</button>
+  </div>
 
-  <label for="nom">Nom</label>
+  <h1 data-i="title"></h1>
+  <p class="sub" data-i="sub"></p>
+
+  <label for="nom" data-i="nom"></label>
   <input id="nom" name="nom" type="text" autocomplete="family-name" required>
 
-  <label for="postnom">Post-nom</label>
+  <label for="postnom" data-i="postnom"></label>
   <input id="postnom" name="postnom" type="text" required>
 
-  <label for="prenom">Prénom</label>
+  <label for="prenom" data-i="prenom"></label>
   <input id="prenom" name="prenom" type="text" autocomplete="given-name" required>
 
-  <label for="statut">Statut dans l’entreprise</label>
-  <select id="statut" name="statut" required>
-    <option value="">Choisir…</option>
-    <option>Président du conseil d’administration</option>
-    <option>Direction générale</option>
-    <option>Directeur des ressources humaines</option>
-    <option>Directeur technique</option>
-    <option>Directeur de projet</option>
-    <option>Service financier</option>
-    <option>Comptable principal</option>
-    <option>Trésorier</option>
-    <option>Responsable documentaire</option>
-    <option>Responsable planning</option>
-    <option>Responsable technique</option>
-    <option>Administration chantier</option>
-    <option>Construction Manager</option>
-    <option>Service logistique</option>
-    <option>Génie civil</option>
-    <option>Architecture</option>
-    <option>Métreur</option>
-    <option>VRD</option>
-    <option>Plomberie</option>
-    <option>Électricité</option>
-    <option>QA/QC</option>
-    <option>Topographie</option>
-    <option>HSE</option>
-    <option>Magasin</option>
-    <option>Autres</option>
-  </select>
+  <label for="statut" data-i="statut"></label>
+  <select id="statut" name="statut" required></select>
 
-  <label for="email">E-mail</label>
+  <label for="email" data-i="email"></label>
   <input id="email" name="email" type="email" autocomplete="email" required>
 
-  <label for="telephone">Téléphone</label>
+  <label for="telephone" data-i="tel"></label>
   <input id="telephone" name="telephone" type="tel" autocomplete="tel" placeholder="+00 ..." required>
 
-  <button id="btn" type="submit">Envoyer</button>
+  <button id="btn" type="submit" data-i="send"></button>
   <div id="msg" role="status" aria-live="polite"></div>
 </form>
 
 <script>
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwgPlNrC4qBdbBUln4UulqcaOzH0fUOwAJHVIGp5eOrps2AyGOO6d6X8tFTCFBOprk1/exec";
 
-  const f = document.getElementById("f"), msg = document.getElementById("msg"), btn = document.getElementById("btn");
+  const T = {
+    fr: {title:"Vos coordonnées", sub:"Remplissez les champs ci-dessous.", nom:"Nom", postnom:"Post-nom", prenom:"Prénom",
+         statut:"Statut dans l’entreprise", choose:"Choisir…", email:"E-mail", tel:"Téléphone", send:"Envoyer",
+         sending:"Envoi en cours…", ok:"Coordonnées enregistrées. Merci !",
+         fail:"Échec de l’envoi. Vérifiez votre connexion et réessayez.",
+         invalid:"Remplissez tous les champs (e-mail et téléphone valides)."},
+    en: {title:"Your contact details", sub:"Fill in the fields below.", nom:"Last name", postnom:"Middle name", prenom:"First name",
+         statut:"Position in the company", choose:"Choose…", email:"Email", tel:"Phone", send:"Submit",
+         sending:"Sending…", ok:"Details saved. Thank you!",
+         fail:"Sending failed. Check your connection and try again.",
+         invalid:"Please fill in all fields (valid email and phone)."},
+    sw: {title:"Taarifa zako za mawasiliano", sub:"Jaza sehemu zilizo hapa chini.", nom:"Jina la ukoo", postnom:"Jina la kati", prenom:"Jina la kwanza",
+         statut:"Nafasi yako katika kampuni", choose:"Chagua…", email:"Barua pepe", tel:"Simu", send:"Tuma",
+         sending:"Inatuma…", ok:"Taarifa zimehifadhiwa. Asante!",
+         fail:"Imeshindwa kutuma. Angalia mtandao wako kisha ujaribu tena.",
+         invalid:"Jaza sehemu zote (barua pepe na simu halali)."}
+  };
+
+  // [valeur envoyée à la feuille (français), anglais, swahili]
+  const STATUTS = [
+    ["Président du conseil d’administration","Chairman of the Board","Mwenyekiti wa Bodi ya Wakurugenzi"],
+    ["Direction générale","General Management","Uongozi Mkuu"],
+    ["Directeur des ressources humaines","Human Resources Director","Mkurugenzi wa Rasilimali Watu"],
+    ["Directeur technique","Technical Director","Mkurugenzi wa Ufundi"],
+    ["Directeur de projet","Project Director","Mkurugenzi wa Mradi"],
+    ["Service financier","Finance Department","Idara ya Fedha"],
+    ["Comptable principal","Chief Accountant","Mhasibu Mkuu"],
+    ["Trésorier","Treasurer","Mweka Hazina"],
+    ["Responsable documentaire","Document Controller","Msimamizi wa Nyaraka"],
+    ["Responsable planning","Planning Manager","Msimamizi wa Ratiba"],
+    ["Responsable technique","Technical Manager","Msimamizi wa Ufundi"],
+    ["Administration chantier","Site Administration","Utawala wa Eneo la Ujenzi"],
+    ["Construction Manager","Construction Manager","Meneja wa Ujenzi"],
+    ["Service logistique","Logistics Department","Idara ya Vifaa na Usafirishaji"],
+    ["Génie civil","Civil Engineering","Uhandisi wa Ujenzi"],
+    ["Architecture","Architecture","Usanifu Majengo"],
+    ["Métreur","Quantity Surveyor","Mpima Kiasi"],
+    ["VRD","Roads & Utilities (VRD)","Barabara na Miundombinu (VRD)"],
+    ["Plomberie","Plumbing","Mabomba"],
+    ["Électricité","Electrical","Umeme"],
+    ["QA/QC","QA/QC","QA/QC (Ubora)"],
+    ["Topographie","Surveying","Upimaji wa Ardhi"],
+    ["HSE","HSE","HSE (Afya, Usalama na Mazingira)"],
+    ["Magasin","Warehouse","Stoo"],
+    ["Autres","Other","Nyingine"]
+  ];
+
+  const f = document.getElementById("f"), msg = document.getElementById("msg"), btn = document.getElementById("btn"), sel = document.getElementById("statut");
   const show = (t, c) => { msg.textContent = t; msg.className = c; };
+  let lang = "fr";
+
+  function setLang(l) {
+    lang = T[l] ? l : "fr";
+    document.documentElement.lang = lang;
+    document.title = T[lang].title;
+    document.querySelectorAll("[data-i]").forEach(el => { el.textContent = T[lang][el.dataset.i]; });
+    const idx = { fr: 0, en: 1, sw: 2 }[lang];
+    const keep = sel.value;
+    sel.innerHTML = "";
+    const first = document.createElement("option");
+    first.value = ""; first.textContent = T[lang].choose;
+    sel.appendChild(first);
+    STATUTS.forEach(s => {
+      const o = document.createElement("option");
+      o.value = s[0];
+      o.textContent = s[idx];
+      sel.appendChild(o);
+    });
+    sel.value = keep;
+    document.querySelectorAll(".lang button").forEach(b => b.classList.toggle("on", b.dataset.l === lang));
+    show("", "");
+    try { localStorage.setItem("lang", lang); } catch (e) {}
+  }
+
+  document.querySelectorAll(".lang button").forEach(b => b.addEventListener("click", () => setLang(b.dataset.l)));
+
+  let start = "fr";
+  try { start = localStorage.getItem("lang") || ""; } catch (e) {}
+  if (!T[start]) {
+    const n = (navigator.language || "fr").slice(0, 2).toLowerCase();
+    start = T[n] ? n : "fr";
+  }
+  setLang(start);
 
   f.addEventListener("submit", async (e) => {
     e.preventDefault();
     const d = Object.fromEntries(new FormData(f));
     if (!d.nom.trim() || !d.postnom.trim() || !d.prenom.trim() || !d.statut ||
         !/^\S+@\S+\.\S+$/.test(d.email) || !/^\+?[0-9 ()-]{8,}$/.test(d.telephone.trim())) {
-      return show("Remplissez tous les champs (e-mail et téléphone valides).", "err");
+      return show(T[lang].invalid, "err");
     }
-    btn.disabled = true; show("Envoi en cours…", "");
+    btn.disabled = true; show(T[lang].sending, "");
     try {
       await fetch(SCRIPT_URL, {
         method: "POST",
@@ -96,9 +159,9 @@
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify(d)
       });
-      f.reset(); show("Coordonnées enregistrées. Merci !", "ok");
+      f.reset(); show(T[lang].ok, "ok");
     } catch (err) {
-      show("Échec de l’envoi. Vérifiez votre connexion et réessayez.", "err");
+      show(T[lang].fail, "err");
     }
     btn.disabled = false;
   });
