@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Formulaire de coordonnées</title>
+<style>
+  :root{--bg:#eef3f7;--card:#fff;--ink:#14232f;--muted:#5b6b78;--line:#c9d6e0;--accent:#0f5c7a;--ok:#1b7a4b;--err:#b3261e}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:var(--bg);color:var(--ink);font-family:"Segoe UI",system-ui,sans-serif}
+  form{width:100%;max-width:440px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:28px 24px}
+  h1{margin:0 0 4px;font-size:1.4rem}
+  p.sub{margin:0 0 20px;color:var(--muted);font-size:.95rem}
+  label{display:block;margin:14px 0 6px;font-weight:600;font-size:.95rem}
+  input,select{width:100%;padding:12px;font-size:1rem;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink)}
+  input:focus,select:focus{outline:2px solid var(--accent);border-color:var(--accent)}
+  button{width:100%;margin-top:22px;padding:13px;font-size:1rem;font-weight:600;color:#fff;background:var(--accent);border:0;border-radius:6px;cursor:pointer}
+  button:disabled{opacity:.6;cursor:wait}
+  #msg{margin-top:14px;font-size:.95rem;min-height:1.2em}
+  .ok{color:var(--ok)}.err{color:var(--err)}
+</style>
+</head>
+<body>
+<form id="f" novalidate>
+  <h1>Vos coordonnées</h1>
+  <p class="sub">Remplissez les champs ci-dessous.</p>
+
+  <label for="nom">Nom</label>
+  <input id="nom" name="nom" type="text" autocomplete="family-name" required>
+
+  <label for="postnom">Post-nom</label>
+  <input id="postnom" name="postnom" type="text" required>
+
+  <label for="prenom">Prénom</label>
+  <input id="prenom" name="prenom" type="text" autocomplete="given-name" required>
+
+  <label for="statut">Statut dans l’entreprise</label>
+  <select id="statut" name="statut" required>
+    <option value="">Choisir…</option>
+    <option>Directeur technique</option>
+    <option>Directeur de projet</option>
+    <option>Service financier</option>
+    <option>Trésorier</option>
+    <option>Direction générale</option>
+    <option>Directeur des ressources humaines</option>
+    <option>Président du conseil d’administration</option>
+    <option>Responsable documentaire</option>
+    <option>Comptable principal</option>
+    <option>Génie civil</option>
+    <option>Responsable technique</option>
+    <option>Métreur</option>
+    <option>VRD</option>
+    <option>Plomberie</option>
+    <option>Électricité</option>
+    <option>Architecture</option>
+    <option>Responsable planning</option>
+    <option>Construction Manager</option>
+    <option>QA/QC</option>
+    <option>Topographie</option>
+    <option>HSE</option>
+    <option>Service logistique</option>
+    <option>Administration chantier</option>
+    <option>Magasin</option>
+    <option>Autres</option>
+  </select>
+
+  <label for="email">E-mail</label>
+  <input id="email" name="email" type="email" autocomplete="email" required>
+
+  <label for="telephone">Téléphone</label>
+  <input id="telephone" name="telephone" type="tel" autocomplete="tel" placeholder="+243 ..." required>
+
+  <button id="btn" type="submit">Envoyer</button>
+  <div id="msg" role="status" aria-live="polite"></div>
+</form>
+
+<script>
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwgPlNrC4qBdbBUln4UulqcaOzH0fUOwAJHVIGp5eOrps2AyGOO6d6X8tFTCFBOprk1/exec";
+
+  const f = document.getElementById("f"), msg = document.getElementById("msg"), btn = document.getElementById("btn");
+  const show = (t, c) => { msg.textContent = t; msg.className = c; };
+
+  f.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const d = Object.fromEntries(new FormData(f));
+    if (!d.nom.trim() || !d.postnom.trim() || !d.prenom.trim() || !d.statut ||
+        !/^\S+@\S+\.\S+$/.test(d.email) || !/^\+?[0-9 ()-]{8,}$/.test(d.telephone.trim())) {
+      return show("Remplissez tous les champs (e-mail et téléphone valides).", "err");
+    }
+    btn.disabled = true; show("Envoi en cours…", "");
+    try {
+      await fetch(SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(d)
+      });
+      f.reset(); show("Coordonnées enregistrées. Merci !", "ok");
+    } catch (err) {
+      show("Échec de l’envoi. Vérifiez votre connexion et réessayez.", "err");
+    }
+    btn.disabled = false;
+  });
+</script>
+</body>
+</html>
